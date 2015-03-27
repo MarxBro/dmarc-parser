@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 ######################################################################
-# DMARC Reporte
+# DMARC Parser y Reporte
 ######################################################################
 
 use strict;
@@ -26,8 +26,15 @@ my %opts = ();
 getopts('hdtai:',\%opts);
 
 # Ayuda y final feliz.
-ayudas() if $opts{h};
+pod2usage(-verbose=>3) if $opts{h};
 exit if $opts{h};
+
+# Chequear si la salida esta redireccionada a una pipa.
+my $ss = 0;
+if (-t STDOUT){
+    $ss++;
+}
+
 
 $opts{i} or die "Error: Especifique un archivo en la entrada con la opcion -i Archivo.xml.
     FINAL NO FELIZ.";
@@ -57,10 +64,10 @@ El programa B<necesita> de un archivo en la entrada, bajo el parametro B<i>.
 
 Si esta ausente, falla.
 
-Sin argumentos adicionales, imprime un reporte exhaustivo.
+Sin argumentos adicionales imprime un reporte exhaustivo.
 
-Si la salida no esta pipeada, o sea, STDOUT es la terminal, imprime 
-con colorines (porque todos aman los colores :P).
+Si la salida es la consola imprime con colores (porque todos aman los colores :P).
+Si esta redireccionada a una pipa, suprime todos los colores.
 
 =cut
 
@@ -89,7 +96,7 @@ my $dmarc_reporte = Parser_XML_DMARC->new( {
     });
 
 
-# Utilizar todos los metodod del objeto, solo por fines ilustrativos.
+# Todos los metodos del objeto.
 
 my $hashref_todo_el_reporte = $dmarc_reporte->archivo;
 
@@ -114,7 +121,7 @@ my %dmarc_reporte_totales = $dmarc_reporte->totales_envios;
 
 
 ######################################################################
-# Pretty Print Area.
+# Imprimir como un campeon 
 ######################################################################
 
 my $separador = '-'x80;
@@ -139,49 +146,49 @@ exit if ($opts{a} || $opts{t});
 # Imprimir tutti el registro.
     ## Datos de la organizacion.
 say $separador_main;
-say colored($mi_dominio_url,$c);
+say g_colored($mi_dominio_url,$c);
 say $separador_main;
-say $indentin, $bullet, "DESDE= ",colored($fecha_inicio_reporte,$c);
-say $indentin, $bullet, "HASTA= ",colored($fecha_final_reporte,$c);
+say $indentin, $bullet, "DESDE= ",g_colored($fecha_inicio_reporte,$c);
+say $indentin, $bullet, "HASTA= ",g_colored($fecha_final_reporte,$c);
 say " ";
 
     ## Politicas Publicadas
 say $separador;
-say colored("Politicas Publicadas",$c);
+say g_colored("Politicas Publicadas",$c);
 say $separador;
 foreach my $k (keys (%politicas_publicadas_por_mi_dominio)){
-    say $indentin, colored($k,$c),$indentin, $politicas_publicadas_por_mi_dominio{$k};
+    say $indentin, g_colored($k,$c),$indentin, $politicas_publicadas_por_mi_dominio{$k};
 }
 say " ";
 
     ## Reporteada de envios.
 say $separador;
-say colored("Envios",$c);
+say g_colored("Envios",$c);
 say $separador;
 my ($dkim_fails,$dkim_total,$dkimpercent) = split(/ /,$dmarc_reporte_totales{'DKIM'});
 my ($spf_fails,$spf_total,$spfpercent) =  split(/ /,$dmarc_reporte_totales{'SPF'});
 
-say "Envios Totales = ", $indentin,colored ("$dkim_total - $spf_total",$c);
+say "Envios Totales = ", $indentin,g_colored ("$dkim_total - $spf_total",$c);
 say " ";
 
 # DKIM
-say $bullet,$indentin,colored("DKIM FAILS = ",$c),$indentin, colored("$dkim_fails",$c),$indentin, colored($dkimpercent,$c2);
+say $bullet,$indentin,g_colored("DKIM FAILS = ",$c),$indentin, g_colored("$dkim_fails",$c),$indentin, g_colored($dkimpercent,$c2);
 
 foreach my $ln (@reporte_dkim){
     unless ($ln =~ m/pass$/){
         my @a = split(/ /,$ln);
-        say $indentin, $bullet, $indentin, "IP: $a[2] ","CAUSA:: ", colored($a[4],$c2)," --  Dominio Emisor::  $a[0]";
+        say $indentin, $bullet, $indentin, "IP: $a[2] ","CAUSA:: ", g_colored($a[4],$c2)," --  Dominio Emisor::  $a[0]";
     }
 }
 say " ";
 
 # Spf
-say $bullet,$indentin,colored("SPF FAILS = ",$c),$indentin, colored("$spf_fails",$c),$indentin, colored($spfpercent,$c2);
+say $bullet,$indentin,g_colored("SPF FAILS = ",$c),$indentin, g_colored("$spf_fails",$c),$indentin, g_colored($spfpercent,$c2);
 
 foreach my $ln (@reporte_spf){
     unless ($ln =~ m/pass$/){
         my @a = split(/ /,$ln);
-        say $indentin, $bullet, $indentin, "IP: $a[2] ","CAUSA:: ", colored($a[4],$c2)," -- Dominio Emisor::  $a[0]";
+        say $indentin, $bullet, $indentin, "IP: $a[2] ","CAUSA:: ", g_colored($a[4],$c2)," -- Dominio Emisor::  $a[0]";
     }
 }
 say " ";
@@ -189,8 +196,15 @@ say " ";
 ######################################################################
 # Subs
 ######################################################################
-sub ayudas {
-    pod2usage(-verbose=>3);
+sub g_colored {
+    my $texto = shift;
+    my $color_string = shift;
+    if ( $ss ){
+        return colored($texto, $color_string);
+    } else {
+        return $texto;
+    }
+
 }
 
 =pod
