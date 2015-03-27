@@ -211,8 +211,9 @@ sub g_colored {
 
 =head1 Autor y Licencia.
 
-Programado por B<Marxbro> aka B<Gstv>, ditribuir solo bajo la licencia
-WTFPL: I<Do What the Fuck You Want To Public License>.
+Programado por B<Marxbro> aka B<Gstv>, en Marzo del 2015. 
+
+Distribuir solo bajo la licencia WTFPL: I<Do What the Fuck You Want To Public License>.
 
 Zaijian.
 
