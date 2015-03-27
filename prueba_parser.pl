@@ -18,7 +18,7 @@ use Data::Dumper;
 =head1 SYNOPSIS
 
 Este programa sirve para procesar la informacion recibida en algun reporte DMARC,
-acerca del envio de correos y la relacion entre estos y los registro spf y dkim.
+acerca del envio de correos y la relacion entre estos y los registros spf y dkim.
 
 =cut
 
@@ -53,9 +53,14 @@ Este programa es muy simple y toma unos pocos parametros.
 
 =back
 
-El programa B<necesita> excluyentemete de un archivo en la entrada, bajo el parametro B<i>. Si esta ausente, falla.
+El programa B<necesita> de un archivo en la entrada, bajo el parametro B<i>. 
 
-Sin argumentos adicionales, imprime todo con colorines porque todos aman los colores. :P
+Si esta ausente, falla.
+
+Sin argumentos adicionales, imprime un reporte exhaustivo.
+
+Si la salida no esta pipeada, o sea, STDOUT es la terminal, imprime 
+con colorines (porque todos aman los colores :P).
 
 =cut
 
@@ -67,11 +72,13 @@ use Parser_XML_DMARC;
 
 =head1 Importante
 
-Este programita se vale del modulo que lo acompaña y es poco mas que un ejemplo practico.
+Este programita se vale del modulo que lo acompaña y es 
+poco mas que un ejemplo practico.
 
 Ambos archivos debiesen estar en la misma carpeta.
 
-Ver el codigo de este archivo es la mejor documentacion posible sobre los metodos que el modulo implemnta y su utilizacion.
+Ver el codigo de este archivo es la mejor documentacion posible sobre 
+los metodos que el modulo implemnta y su utilizacion.
 
 =cut
 
@@ -99,7 +106,6 @@ my @politicas_posibles = $dmarc_reporte->politicas_pub_nombres;
 my $p_string = join(',',@politicas_posibles);
 
 my %politicas_publicadas_por_mi_dominio = $dmarc_reporte->politicas_pub(split(/,/,$p_string));
-#my %politicas_publicadas_por_mi_dominio = $dmarc_reporte->politicas_pub($consulta_politicas_de_mi_dominio);
 
 my @reporte_dkim = $dmarc_reporte->reporte_mails_dkim;
 my @reporte_spf = $dmarc_reporte->reporte_mails_spf;
@@ -158,7 +164,7 @@ my ($spf_fails,$spf_total,$spfpercent) =  split(/ /,$dmarc_reporte_totales{'SPF'
 say "Envios Totales = ", $indentin,colored ("$dkim_total - $spf_total",$c);
 say " ";
 
-
+# DKIM
 say $bullet,$indentin,colored("DKIM FAILS = ",$c),$indentin, colored("$dkim_fails",$c),$indentin, colored($dkimpercent,$c2);
 
 foreach my $ln (@reporte_dkim){
@@ -169,7 +175,7 @@ foreach my $ln (@reporte_dkim){
 }
 say " ";
 
-
+# Spf
 say $bullet,$indentin,colored("SPF FAILS = ",$c),$indentin, colored("$spf_fails",$c),$indentin, colored($spfpercent,$c2);
 
 foreach my $ln (@reporte_spf){
