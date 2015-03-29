@@ -26,7 +26,7 @@ my %opts = ();
 getopts('hdtai:',\%opts);
 
 # Ayuda y final feliz.
-pod2usage(-verbose=>3) if $opts{h};
+pod2usage( -verbose => 3, exitval => 0 ) if $opts{h};
 exit if $opts{h};
 
 # Chequear si la salida esta redireccionada a una pipa.
@@ -48,7 +48,7 @@ Este programa es muy simple y toma unos pocos parametros.
 
 =over
 
-=item * B<-i>       Archivo input (El xml del reporte). [EXCLUYENTE]
+=item * B<-i>       Archivo input (El xml del reporte). [OBLIGATORIO]
 
 =item * B<-h>       (Esta) Ayuda.
 
@@ -168,11 +168,17 @@ say $separador;
 my ($dkim_fails,$dkim_total,$dkimpercent) = split(/ /,$dmarc_reporte_totales{'DKIM'});
 my ($spf_fails,$spf_total,$spfpercent) =  split(/ /,$dmarc_reporte_totales{'SPF'});
 
-say "Envios Totales = ", $indentin,g_colored ("$dkim_total - $spf_total",$c);
-say " ";
+# Este chequeo solamente seria util en caso de phishing muuuuy zarpado.
+if ($dkim_total != $spf_total){
+    say "Envios Totales = ", $indentin,g_colored ("$dkim_total - $spf_total",$c," LA CANTIDAD DE ENVIOSCON RECORD DKIM Y SPF SON DISTINTOS!");
+    say " ";
+} else {
+    say "Envios Totales = ", $indentin,g_colored ("$dkim_total",$c), " Correos enviados. ";
+    say " ";
+}
 
 # DKIM
-say $bullet,$indentin,g_colored("DKIM FAILS = ",$c),$indentin, g_colored("$dkim_fails",$c),$indentin, g_colored($dkimpercent,$c2);
+say $bullet,$indentin,g_colored("DKIM FAILS = ",$c),$indentin, g_colored("$dkim_fails",$c),$indentin, g_colored(sprintf("%2.f",$dkimpercent),$c2), " %";
 
 foreach my $ln (@reporte_dkim){
     unless ($ln =~ m/pass$/){
@@ -183,7 +189,7 @@ foreach my $ln (@reporte_dkim){
 say " ";
 
 # Spf
-say $bullet,$indentin,g_colored("SPF FAILS = ",$c),$indentin, g_colored("$spf_fails",$c),$indentin, g_colored($spfpercent,$c2);
+say $bullet,$indentin,g_colored("SPF FAILS = ",$c),$indentin, g_colored("$spf_fails",$c),$indentin, g_colored( (sprintf "%2.f", $spfpercent),$c2), " %";
 
 foreach my $ln (@reporte_spf){
     unless ($ln =~ m/pass$/){
@@ -191,6 +197,12 @@ foreach my $ln (@reporte_spf){
         say $indentin, $bullet, $indentin, "IP: $a[2] ","CAUSA:: ", g_colored($a[4],$c2)," -- Dominio Emisor::  $a[0]";
     }
 }
+say " ";
+
+# Esto es solamente para que separe los reportes cuando vayan pipeados a un unico txt. Quedan desprolijos y con muchas lineas,
+# asi que le agregue una mas para que empeorando la cosa pueda entender algo! :P.
+say " ";
+say '@' x 100;
 say " ";
 
 ######################################################################
@@ -208,6 +220,16 @@ sub g_colored {
 }
 
 =pod
+
+=head1 Entonces... Que hago con esto?
+
+Ja! Esa es la gran pregunta.
+
+Yo, que tengo varios dominios que vigilar del phishing, hago esto en un directorio con todos los reportes nuevos:
+
+C<for i in *.xml; do ./prueba_parser.pl -i $i E<gt>E<gt> Salida.txt; done>
+
+Pero Ud. haga lo que quiera (ver abajo).
 
 =head1 Autor y Licencia.
 

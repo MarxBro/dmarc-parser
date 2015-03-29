@@ -15,6 +15,7 @@ use Class::Tiny qw( archivo_input archivo fecha_reporte emisor
 use XML::Simple;
 use POSIX q/strftime/;
 use Carp;
+use Data::Dumper;
 
 ######################################################################
 # DOCS
@@ -72,6 +73,8 @@ my (
     $cuenta_totales_envio_FAILS_spf, $cuenta_totales_envio_FAILS_dkim
 );
 
+my $debug = 0; # Debug flag.
+
 # Constructor !
 sub BUILD {
     my ( $self, $args ) = @_;
@@ -80,6 +83,7 @@ sub BUILD {
     }
     my $xml = new XML::Simple;
     $todo_el_archivo = $xml->XMLin( $self->archivo_input );
+    print Dumper($todo_el_archivo) if $debug;
     @politicas_publicadas_validas = (qw(p aspf sp pct adkim domain));
 }
 
@@ -278,23 +282,38 @@ B<dominio emisor - cantidad - ip emisora - Dominio dkim - resultado dkim>
 =cut
 sub reporte_mails_dkim {
     my $self = shift;
-    my @array_retornable = (); # aca van los resultados, por ahora como string separadetes por un espacio en blanco.
+    my @array_retornable = ();
     my $ha = 0;
 
-    foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
-        my $cantidad_dkim           = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
-        my $ip_emisora              = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
-        my $resultado_dkim          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'result'}; 
-        my $dominio_records_dkim    = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'domain'};
-        my $dominio_emisor          = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
+    if (ref($todo_el_archivo->{"record"}) eq 'ARRAY'){
+        foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
+            my $cantidad_dkim           = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
+            my $ip_emisora              = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
+            my $resultado_dkim          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'result'}; 
+            my $dominio_records_dkim    = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'domain'};
+            my $dominio_emisor          = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
+            my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_dkim,$ip_emisora,$dominio_records_dkim,$resultado_dkim));
+            push(@array_retornable,$lna_pra_push);
+            $ha++;
+            $cuenta_totales_envio_dkim += $cantidad_dkim;
+            unless ($resultado_dkim eq 'pass'){
+                $cuenta_totales_envio_FAILS_dkim += $cantidad_dkim;
+            }
+        }
+    } else{
+        my $cantidad_dkim           = $todo_el_archivo->{"record"}{'row'}{'count'};
+        my $ip_emisora              = $todo_el_archivo->{"record"}{'row'}{'source_ip'};
+        my $resultado_dkim          = $todo_el_archivo->{"record"}{'auth_results'}{'dkim'}{'result'}; 
+        my $dominio_records_dkim    = $todo_el_archivo->{"record"}{'auth_results'}{'dkim'}{'domain'};
+        my $dominio_emisor          = $todo_el_archivo->{"record"}{'identifiers'}{'header_from'};
         my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_dkim,$ip_emisora,$dominio_records_dkim,$resultado_dkim));
         push(@array_retornable,$lna_pra_push);
-        $ha++;
         $cuenta_totales_envio_dkim += $cantidad_dkim;
         unless ($resultado_dkim eq 'pass'){
             $cuenta_totales_envio_FAILS_dkim += $cantidad_dkim;
         }
     }
+
     return @array_retornable;
 }
 
@@ -316,23 +335,38 @@ B<dominio emisor - cantidad - ip emisora - Dominio spf - resultado spf>
 
 sub reporte_mails_spf {
     my $self = shift;
-    my @array_retornable = (); 
+    my @array_retornable = ();
     my $ha = 0;
 
-    foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
-        my $cantidad_spf            = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
-        my $ip_emisora              = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
-        my $resultado_spf           = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'result'}; 
-        my $dominio_records_spf     = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'domain'};
-        my $dominio_emisor          = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
+    if (ref($todo_el_archivo->{"record"}) eq 'ARRAY'){
+        foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
+            my $cantidad_spf           = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
+            my $ip_emisora             = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
+            my $resultado_spf          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'result'}; 
+            my $dominio_records_spf    = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'domain'};
+            my $dominio_emisor         = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
+            my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_spf,$ip_emisora,$dominio_records_spf,$resultado_spf));
+            push(@array_retornable,$lna_pra_push);
+            $ha++;
+            $cuenta_totales_envio_spf += $cantidad_spf;
+            unless ($resultado_spf eq 'pass'){
+                $cuenta_totales_envio_FAILS_spf += $cantidad_spf;
+            }
+        }
+    } else{
+        my $cantidad_spf           = $todo_el_archivo->{"record"}{'row'}{'count'};
+        my $ip_emisora             = $todo_el_archivo->{"record"}{'row'}{'source_ip'};
+        my $resultado_spf          = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'result'}; 
+        my $dominio_records_spf    = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'domain'};
+        my $dominio_emisor         = $todo_el_archivo->{"record"}{'identifiers'}{'header_from'};
         my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_spf,$ip_emisora,$dominio_records_spf,$resultado_spf));
         push(@array_retornable,$lna_pra_push);
-        $ha++;
         $cuenta_totales_envio_spf += $cantidad_spf;
         unless ($resultado_spf eq 'pass'){
             $cuenta_totales_envio_FAILS_spf += $cantidad_spf;
         }
     }
+
     return @array_retornable;
 }
 
