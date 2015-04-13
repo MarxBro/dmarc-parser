@@ -146,6 +146,7 @@ exit if ($opts{a} || $opts{t});
 # Imprimir tutti el registro.
     ## Datos de la organizacion.
 say $separador_main;
+say $bullet, g_colored($entidad_emisora_del_reporte,$c), " reporte para el dominio::";
 say g_colored($mi_dominio_url,$c);
 say $separador_main;
 say $indentin, $bullet, "DESDE= ",g_colored($fecha_inicio_reporte,$c);
@@ -166,15 +167,22 @@ say $separador;
 say g_colored("Envios",$c);
 say $separador;
 my ($dkim_fails,$dkim_total,$dkimpercent) = split(/ /,$dmarc_reporte_totales{'DKIM'});
+say ($dkim_fails,'-',$dkim_total,'-',$dkimpercent) if $debug;
 my ($spf_fails,$spf_total,$spfpercent) =  split(/ /,$dmarc_reporte_totales{'SPF'});
+say ($spf_fails,'-',$spf_total,'-',$spfpercent) if $debug;
 
-# Este chequeo solamente seria util en caso de phishing muuuuy zarpado.
+# Este chequeo solamente seria util en caso de que alguna entidad emsora analice unicamente un tipo de record -Facebook?- o de phishing muuuuy zarpado.
 if ($dkim_total != $spf_total){
     say "Envios Totales = ", $indentin,g_colored ("$dkim_total - $spf_total",$c," LA CANTIDAD DE ENVIOSCON RECORD DKIM Y SPF SON DISTINTOS!");
     say " ";
 } else {
-    say "Envios Totales = ", $indentin,g_colored ("$dkim_total",$c), " Correos enviados. ";
-    say " ";
+    if ($dkim_total){
+        say "Envios Totales = ", $indentin,g_colored ("$dkim_total",$c), " Correos enviados. ";
+        say " ";
+    } else {
+        say "Envios Totales = ", $indentin,g_colored ("spf_total",$c), " Correos enviados. ";
+        say " ";
+    }
 }
 
 # DKIM

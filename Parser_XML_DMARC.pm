@@ -279,6 +279,12 @@ I<Devuelve un string>.
 
 B<dominio emisor - cantidad - ip emisora - Dominio dkim - resultado dkim>
 
+=head2 Nota importante:
+
+Si por alguna razon la entidad emisora emite reportar el record dkim (si no hace chequeos, por ejemplo),
+esta funcion NO reporta ese mensaje como error.
+
+
 =cut
 sub reporte_mails_dkim {
     my $self = shift;
@@ -289,7 +295,10 @@ sub reporte_mails_dkim {
         foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
             my $cantidad_dkim           = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
             my $ip_emisora              = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
-            my $resultado_dkim          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'result'}; 
+            my $resultado_dkim          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'result'};
+            unless($resultado_dkim){
+                $resultado_dkim = 'pass';
+            }
             my $dominio_records_dkim    = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'domain'};
             my $dominio_emisor          = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
             my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_dkim,$ip_emisora,$dominio_records_dkim,$resultado_dkim));
@@ -303,7 +312,10 @@ sub reporte_mails_dkim {
     } else{
         my $cantidad_dkim           = $todo_el_archivo->{"record"}{'row'}{'count'};
         my $ip_emisora              = $todo_el_archivo->{"record"}{'row'}{'source_ip'};
-        my $resultado_dkim          = $todo_el_archivo->{"record"}{'auth_results'}{'dkim'}{'result'}; 
+        my $resultado_dkim          = $todo_el_archivo->{"record"}{'auth_results'}{'dkim'}{'result'};
+            unless($resultado_dkim){
+                $resultado_dkim = 'pass';
+            }
         my $dominio_records_dkim    = $todo_el_archivo->{"record"}{'auth_results'}{'dkim'}{'domain'};
         my $dominio_emisor          = $todo_el_archivo->{"record"}{'identifiers'}{'header_from'};
         my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_dkim,$ip_emisora,$dominio_records_dkim,$resultado_dkim));
@@ -331,6 +343,11 @@ I<Devuelve un string.>
 
 B<dominio emisor - cantidad - ip emisora - Dominio spf - resultado spf>
 
+=head2 Nota importante:
+
+Igual que la anterior, Si por alguna razon la entidad emisora emite reportar el record dkim (si no hace chequeos, por ejemplo),
+esta funcion NO reporta ese mensaje como error.
+
 =cut
 
 sub reporte_mails_spf {
@@ -342,7 +359,10 @@ sub reporte_mails_spf {
         foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
             my $cantidad_spf           = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
             my $ip_emisora             = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
-            my $resultado_spf          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'result'}; 
+            my $resultado_spf          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'result'};
+            unless($resultado_spf){
+                $resultado_spf = 'pass';
+            }
             my $dominio_records_spf    = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'domain'};
             my $dominio_emisor         = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
             my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_spf,$ip_emisora,$dominio_records_spf,$resultado_spf));
@@ -356,7 +376,10 @@ sub reporte_mails_spf {
     } else{
         my $cantidad_spf           = $todo_el_archivo->{"record"}{'row'}{'count'};
         my $ip_emisora             = $todo_el_archivo->{"record"}{'row'}{'source_ip'};
-        my $resultado_spf          = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'result'}; 
+        my $resultado_spf          = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'result'};
+            unless($resultado_spf){
+                $resultado_spf = 'pass';
+            }
         my $dominio_records_spf    = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'domain'};
         my $dominio_emisor         = $todo_el_archivo->{"record"}{'identifiers'}{'header_from'};
         my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_spf,$ip_emisora,$dominio_records_spf,$resultado_spf));
