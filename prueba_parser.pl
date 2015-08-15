@@ -180,7 +180,7 @@ if ($dkim_total != $spf_total){
         say "Envios Totales = ", $indentin,g_colored ("$dkim_total",$c), " Correos enviados. ";
         say " ";
     } else {
-        say "Envios Totales = ", $indentin,g_colored ("spf_total",$c), " Correos enviados. ";
+        say "Envios Totales = ", $indentin,g_colored ("$spf_total",$c), " Correos enviados. ";
         say " ";
     }
 }
