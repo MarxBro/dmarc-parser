@@ -74,6 +74,7 @@ my (
 );
 
 my $debug = 0; # Debug flag.
+my $debug_hiper = 1; # Debug flag.
 
 # Constructor !
 sub BUILD {
@@ -295,19 +296,39 @@ sub reporte_mails_dkim {
         foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
             my $cantidad_dkim           = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
             my $ip_emisora              = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
-            my $resultado_dkim          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'result'};
-            unless($resultado_dkim){
-                $resultado_dkim = 'pass';
+            # A veces es un ARRAY !!! -- bugfix.
+            my ($resultado_dkim,$dominio_records_dkim);
+            if (ref($todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}) eq 'ARRAY'){
+                #es un ARRAY
+                my ($dkim_OK,$dkim_BAD) = 0;
+                my @dominios_dkim = ();
+                my @resultado_dkim_plural = ();
+                for my $ind (0 .. $#{ $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'} }){
+                    # cada uno de los elementos del array tiene un resultado...    
+                    my $resultado_dkim_array = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}[$ind]{'result'};
+                    push (@resultado_dkim_plural , $resultado_dkim_array) ;
+                    push (@dominios_dkim,$todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}[$ind]{'domain'});
+                    if ($resultado_dkim_array eq 'pass'){
+                        $dkim_OK++;    
+                    } else {
+                        $dkim_BAD++;    
+                    }
+                }
+                $dominio_records_dkim = join('||',@dominios_dkim);
+                $resultado_dkim = join('||',@resultado_dkim_plural);
+                $cuenta_totales_envio_FAILS_dkim += $dkim_BAD;
+            } else {
+                $resultado_dkim         = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'result'};
+                $dominio_records_dkim   = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'domain'};
+                unless ($resultado_dkim eq 'pass'){
+                    $cuenta_totales_envio_FAILS_dkim += $cantidad_dkim;
+                }
             }
-            my $dominio_records_dkim    = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'dkim'}{'domain'};
             my $dominio_emisor          = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
             my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_dkim,$ip_emisora,$dominio_records_dkim,$resultado_dkim));
             push(@array_retornable,$lna_pra_push);
             $ha++;
             $cuenta_totales_envio_dkim += $cantidad_dkim;
-            unless ($resultado_dkim eq 'pass'){
-                $cuenta_totales_envio_FAILS_dkim += $cantidad_dkim;
-            }
         }
     } else{
         my $cantidad_dkim           = $todo_el_archivo->{"record"}{'row'}{'count'};
@@ -350,6 +371,49 @@ esta funcion NO reporta ese mensaje como error.
 
 =cut
 
+#sub reporte_mails_spf {
+    #my $self = shift;
+    #my @array_retornable = ();
+    #my $ha = 0;
+
+    #if (ref($todo_el_archivo->{"record"}) eq 'ARRAY'){
+        #foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
+            #my $cantidad_spf           = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
+            #my $ip_emisora             = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
+            #my $resultado_spf          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'result'};
+            #unless($resultado_spf){
+                #$resultado_spf = 'pass';
+            #}
+            #my $dominio_records_spf    = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'domain'};
+            #my $dominio_emisor         = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
+            #my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_spf,$ip_emisora,$dominio_records_spf,$resultado_spf));
+            #push(@array_retornable,$lna_pra_push);
+            #$ha++;
+            #$cuenta_totales_envio_spf += $cantidad_spf;
+            #unless ($resultado_spf eq 'pass'){
+                #$cuenta_totales_envio_FAILS_spf += $cantidad_spf;
+            #}
+        #}
+    #} else{
+        #my $cantidad_spf           = $todo_el_archivo->{"record"}{'row'}{'count'};
+        #my $ip_emisora             = $todo_el_archivo->{"record"}{'row'}{'source_ip'};
+        #my $resultado_spf          = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'result'};
+            #unless($resultado_spf){
+                #$resultado_spf = 'pass';
+            #}
+        #my $dominio_records_spf    = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'domain'};
+        #my $dominio_emisor         = $todo_el_archivo->{"record"}{'identifiers'}{'header_from'};
+        #my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_spf,$ip_emisora,$dominio_records_spf,$resultado_spf));
+        #push(@array_retornable,$lna_pra_push);
+        #$cuenta_totales_envio_spf += $cantidad_spf;
+        #unless ($resultado_spf eq 'pass'){
+            #$cuenta_totales_envio_FAILS_spf += $cantidad_spf;
+        #}
+    #}
+
+    #return @array_retornable;
+#}
+
 sub reporte_mails_spf {
     my $self = shift;
     my @array_retornable = ();
@@ -358,30 +422,50 @@ sub reporte_mails_spf {
     if (ref($todo_el_archivo->{"record"}) eq 'ARRAY'){
         foreach (0 .. $#{ $todo_el_archivo->{"record"} }) {
             my $cantidad_spf           = $todo_el_archivo->{"record"}[$ha]{'row'}{'count'};
-            my $ip_emisora             = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
-            my $resultado_spf          = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'result'};
-            unless($resultado_spf){
-                $resultado_spf = 'pass';
+            my $ip_emisora              = $todo_el_archivo->{"record"}[$ha]{'row'}{'source_ip'};
+            # A veces es un ARRAY !!! -- bugfix.
+            my ($resultado_spf,$dominio_records_spf);
+            if (ref($todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}) eq 'ARRAY'){
+                #es un ARRAY
+                my ($spf_OK,$spf_BAD) = 0;
+                my @dominios_spf = ();
+                my @resultado_spf_plural = ();
+                for my $ind (0 .. $#{ $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'} }){
+                    # cada uno de los elementos del array tiene un resultado...    
+                    my $resultado_spf_array = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}[$ind]{'result'};
+                    push (@resultado_spf_plural , $resultado_spf_array) ;
+                    push (@dominios_spf,$todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}[$ind]{'domain'});
+                    if ($resultado_spf_array eq 'pass'){
+                        $spf_OK++;    
+                    } else {
+                        $spf_BAD++;    
+                    }
+                }
+                $dominio_records_spf = join('||',@dominios_spf);
+                $resultado_spf = join('||',@resultado_spf_plural);
+                $cuenta_totales_envio_FAILS_spf += $spf_BAD;
+            } else {
+                $resultado_spf         = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'result'};
+                $dominio_records_spf   = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'domain'};
+                unless ($resultado_spf eq 'pass'){
+                    $cuenta_totales_envio_FAILS_spf += $cantidad_spf;
+                }
             }
-            my $dominio_records_spf    = $todo_el_archivo->{"record"}[$ha]{'auth_results'}{'spf'}{'domain'};
-            my $dominio_emisor         = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
+            my $dominio_emisor          = $todo_el_archivo->{"record"}[$ha]{'identifiers'}{'header_from'};
             my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_spf,$ip_emisora,$dominio_records_spf,$resultado_spf));
             push(@array_retornable,$lna_pra_push);
             $ha++;
             $cuenta_totales_envio_spf += $cantidad_spf;
-            unless ($resultado_spf eq 'pass'){
-                $cuenta_totales_envio_FAILS_spf += $cantidad_spf;
-            }
         }
     } else{
         my $cantidad_spf           = $todo_el_archivo->{"record"}{'row'}{'count'};
-        my $ip_emisora             = $todo_el_archivo->{"record"}{'row'}{'source_ip'};
+        my $ip_emisora              = $todo_el_archivo->{"record"}{'row'}{'source_ip'};
         my $resultado_spf          = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'result'};
             unless($resultado_spf){
                 $resultado_spf = 'pass';
             }
         my $dominio_records_spf    = $todo_el_archivo->{"record"}{'auth_results'}{'spf'}{'domain'};
-        my $dominio_emisor         = $todo_el_archivo->{"record"}{'identifiers'}{'header_from'};
+        my $dominio_emisor          = $todo_el_archivo->{"record"}{'identifiers'}{'header_from'};
         my $lna_pra_push = join(" ",($dominio_emisor,$cantidad_spf,$ip_emisora,$dominio_records_spf,$resultado_spf));
         push(@array_retornable,$lna_pra_push);
         $cuenta_totales_envio_spf += $cantidad_spf;

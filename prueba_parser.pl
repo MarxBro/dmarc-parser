@@ -4,7 +4,7 @@
 ######################################################################
 
 use strict;
-use warnings;
+#use warnings;
 use feature "say";
 use Getopt::Std;
 use Pod::Usage;
